@@ -1,0 +1,13 @@
+fecha,version,dispositivo,hilos,epocas,corrida,fase,segundos,detalle
+2026-11-14T16:19:50,secuencial,cpu,1,3,1,carga,18.856,imagenes=22022
+2026-11-14T16:31:42,secuencial,cpu,1,3,1,entrenamiento,712.622,por_epoca=219.72;240.73;252.16
+2026-11-14T16:32:17,secuencial,cpu,1,3,1,evaluacion,34.290,acc_val=0.9952;f1_val=0.9951;acc_test=0.9961;f1_test=0.9960
+2026-11-14T16:32:17,secuencial,cpu,1,3,1,total,765.786,
+2026-11-14T16:32:56,secuencial,cpu,1,3,2,carga,39.095,imagenes=22022
+2026-11-14T16:45:45,secuencial,cpu,1,3,2,entrenamiento,768.859,por_epoca=257.67;256.26;254.92
+2026-11-14T16:46:26,secuencial,cpu,1,3,2,evaluacion,41.368,acc_val=0.9952;f1_val=0.9951;acc_test=0.9961;f1_test=0.9960
+2026-11-14T16:46:26,secuencial,cpu,1,3,2,total,849.350,
+2026-11-14T16:47:14,secuencial,cpu,1,3,3,carga,48.290,imagenes=22022
+2026-11-14T17:03:49,secuencial,cpu,1,3,3,entrenamiento,994.330,por_epoca=325.25;338.11;330.96
+2026-11-14T17:04:35,secuencial,cpu,1,3,3,evaluacion,46.470,acc_val=0.9952;f1_val=0.9951;acc_test=0.9961;f1_test=0.9960
+2026-11-14T17:04:35,secuencial,cpu,1,3,3,total,1089.160,

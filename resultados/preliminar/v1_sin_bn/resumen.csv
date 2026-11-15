@@ -1,0 +1,5 @@
+version,epocas,fase,n,media,desv,minimo,maximo,speedup
+secuencial,3,carga,3,27.4183,9.2967,19.567,37.684,1.0
+secuencial,3,entrenamiento,3,754.983,67.4967,706.342,832.042,1.0
+secuencial,3,evaluacion,3,33.5007,1.8952,31.377,35.02,1.0
+secuencial,3,total,3,815.9303,60.483,779.083,885.734,1.0

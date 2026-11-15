@@ -1,0 +1,11 @@
+# PyTorch con CUDA 12.8: minimo para la RTX 5070 (Blackwell, sm_120).
+# Version fijada con su etiqueta +cu128: sin ella pip podria elegir la build
+# solo-CPU de PyPI. Instalar en un venv FUERA de OneDrive (ver PLAN.md).
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.11.0+cu128
+numpy
+pandas
+pillow
+scikit-learn
+kagglehub
+matplotlib
