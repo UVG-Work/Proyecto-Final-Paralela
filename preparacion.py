@@ -28,8 +28,14 @@ COLUMNAS = ["fecha", "version", "dispositivo", "hilos", "epocas",
 def ruta_dataset(ruta=None):
     """Carpeta con una subcarpeta por clase (A..Z, del, nothing, space).
 
-    Sin argumento usa kagglehub, que devuelve la copia en cache si ya existe.
+    Sin argumento busca en la cache local de kagglehub o lo descarga si no existe.
     """
+    if ruta is None:
+        cache = Path.home() / ".cache" / "kagglehub" / "datasets" / "grassknoted" / "asl-alphabet" / "versions"
+        if cache.is_dir():
+            vers = [p for p in sorted(cache.iterdir()) if p.is_dir()]
+            if vers:
+                ruta = vers[-1]
     if ruta is None:
         import kagglehub
         ruta = kagglehub.dataset_download("grassknoted/asl-alphabet")
