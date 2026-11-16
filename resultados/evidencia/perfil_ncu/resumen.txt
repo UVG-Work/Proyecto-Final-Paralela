@@ -1,0 +1,13 @@
+﻿version:            perfil_ncu
+comando:            python perfilar_gpu.py
+inicio:             2026-11-15T20:42:08
+CPU en reposo:      10.9 %   (PLAN: < 5 %)
+GPU en reposo:      0 %, 0 MiB, 58   (uso %, memoria, temperatura)
+modo de energia:    Best performance   (Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced))
+conectada a la red: True
+fin:                2026-11-15T20:50:40  (duracion 8.5 min)
+codigo de salida:   0
+GPU uso medio/max:  0.1 % / 58 %
+GPU memoria max:    1904 MiB
+GPU temperatura max: 66 C
+capturas:           5

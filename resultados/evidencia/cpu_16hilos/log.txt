@@ -1,0 +1,29 @@
+﻿cpu_16hilos: 22022 imagenes, 29 clases, 3 epocas, torch 2.11.0+cu128, 16 hilo(s)
+calentamiento (no se registra): 17.2 s
+
+Corrida 1/3
+  [carga] 25.88 s  imagenes=22022
+  epoca 1/3: perdida=1.6624  16.9 s
+  epoca 2/3: perdida=0.2447  18.0 s
+  epoca 3/3: perdida=0.0336  18.7 s
+  [entrenamiento] 53.49 s  por_epoca=16.86;17.97;18.65
+  [evaluacion] 2.55 s  acc_val=0.9939;f1_val=0.9939;acc_test=0.9955;f1_test=0.9955
+  [total] 81.95 s  
+
+Corrida 2/3
+  [carga] 25.74 s  imagenes=22022
+  epoca 1/3: perdida=1.6624  16.7 s
+  epoca 2/3: perdida=0.2447  18.6 s
+  epoca 3/3: perdida=0.0336  19.5 s
+  [entrenamiento] 54.83 s  por_epoca=16.70;18.64;19.49
+  [evaluacion] 2.43 s  acc_val=0.9939;f1_val=0.9939;acc_test=0.9955;f1_test=0.9955
+  [total] 83.02 s  
+
+Corrida 3/3
+  [carga] 25.52 s  imagenes=22022
+  epoca 1/3: perdida=1.6624  17.6 s
+  epoca 2/3: perdida=0.2447  18.5 s
+  epoca 3/3: perdida=0.0336  18.9 s
+  [entrenamiento] 54.98 s  por_epoca=17.61;18.51;18.85
+  [evaluacion] 2.42 s  acc_val=0.9939;f1_val=0.9939;acc_test=0.9955;f1_test=0.9955
+  [total] 82.95 s  

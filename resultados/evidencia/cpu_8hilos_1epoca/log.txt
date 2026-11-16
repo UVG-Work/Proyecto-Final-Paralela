@@ -1,0 +1,9 @@
+﻿cpu_8hilos: 22022 imagenes, 29 clases, 1 epocas, torch 2.11.0+cu128, 8 hilo(s)
+calentamiento (no se registra): 16.6 s
+
+Corrida 1/1
+  [carga] 25.75 s  imagenes=22022
+  epoca 1/1: perdida=1.2817  26.5 s
+  [entrenamiento] 26.51 s  por_epoca=26.51
+  [evaluacion] 3.46 s  acc_val=0.9201;f1_val=0.9193;acc_test=0.9177;f1_test=0.9165
+  [total] 55.75 s  

@@ -1,0 +1,13 @@
+﻿version:            cpu_8hilos_1epoca
+comando:            python secuencial.py --hilos 8 --corridas 1 --epocas 1
+inicio:             2026-11-15T19:24:05
+CPU en reposo:      7.6 %   (PLAN: < 5 %)
+GPU en reposo:      0 %, 0 MiB, 44   (uso %, memoria, temperatura)
+modo de energia:    Best performance   (Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced))
+conectada a la red: True
+fin:                2026-11-15T19:25:26  (duracion 1.4 min)
+codigo de salida:   0
+GPU uso medio/max:  0 % / 0 %
+GPU memoria max:    0 MiB
+GPU temperatura max: 54 C
+capturas:           2

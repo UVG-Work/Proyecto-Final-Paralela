@@ -109,8 +109,13 @@ con mucha ramificación. Esa diferencia es la base del paso 3.
 
 ### 2.1 Procedimiento
 
-- **Hardware:** Intel Core i9-14900HX (8 núcleos P + 16 núcleos E, 32 hilos), 32 GB RAM,
-  NVIDIA RTX 5070 Laptop 8 GB (no se usa en esta versión). Windows 11.
+- **Hardware de las mediciones preliminares (2.2):** Intel Core i9-14900HX (8 núcleos P + 16
+  núcleos E, 32 hilos), 32 GB RAM, NVIDIA RTX 5070 Laptop 8 GB (no se usa en esta versión).
+  Windows 11.
+- **Hardware de la medición final** (cambio del 15/11, ver PLAN.md, decisión 6): Intel Core
+  Ultra 9 275HX (8 núcleos P + 16 núcleos E, **24 hilos, sin Hyper-Threading**), 32 GB RAM,
+  RTX 5070 Laptop 8 GB, Windows 11, Python 3.12.10. La línea base se vuelve a medir ahí; las
+  cifras de esta sección (y las del 3.1 % = 1/32) se actualizan con esa corrida.
 - **Software:** Python 3.10.11, PyTorch 2.11.0+cu128, Pillow, NumPy, scikit-learn.
 - **Secuencial de verdad:** `torch.set_num_threads(1)` y `set_num_interop_threads(1)`; la carga
   es un `for` en el hilo principal.

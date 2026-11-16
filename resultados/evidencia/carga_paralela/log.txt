@@ -1,0 +1,64 @@
+﻿Verificando igualdad bit a bit contra preparacion.cargar_secuencial...
+  Secuencial:  0.169 s (shape: (200, 64, 64, 3), dtype: uint8)
+  Procesos(4): 0.457 s -> Igual: True
+  Hilos(4):    0.066 s -> Igual: True
+  [OK] Verificacion bit a bit exitosa (ambas coinciden al 100%).
+
+Calentando cache de disco...
+Cache caliente (15.09 s). Iniciando mediciones.
+
+
+--- Evaluando carga_procesos_1 (1 procesos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 24.806 s (22022 imagenes)
+  [Corrida 2/3] carga: 23.098 s (22022 imagenes)
+  [Corrida 3/3] carga: 23.177 s (22022 imagenes)
+
+--- Evaluando carga_procesos_2 (2 procesos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 11.195 s (22022 imagenes)
+  [Corrida 2/3] carga: 11.078 s (22022 imagenes)
+  [Corrida 3/3] carga: 10.962 s (22022 imagenes)
+
+--- Evaluando carga_procesos_4 (4 procesos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 6.593 s (22022 imagenes)
+  [Corrida 2/3] carga: 6.803 s (22022 imagenes)
+  [Corrida 3/3] carga: 6.884 s (22022 imagenes)
+
+--- Evaluando carga_procesos_8 (8 procesos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 6.928 s (22022 imagenes)
+  [Corrida 2/3] carga: 6.793 s (22022 imagenes)
+  [Corrida 3/3] carga: 6.935 s (22022 imagenes)
+
+--- Evaluando carga_procesos_12 (12 procesos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 7.342 s (22022 imagenes)
+  [Corrida 2/3] carga: 7.302 s (22022 imagenes)
+  [Corrida 3/3] carga: 7.398 s (22022 imagenes)
+
+--- Evaluando carga_procesos_16 (16 procesos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 7.548 s (22022 imagenes)
+  [Corrida 2/3] carga: 7.448 s (22022 imagenes)
+  [Corrida 3/3] carga: 7.439 s (22022 imagenes)
+
+--- Evaluando carga_procesos_20 (20 procesos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 7.900 s (22022 imagenes)
+  [Corrida 2/3] carga: 7.863 s (22022 imagenes)
+  [Corrida 3/3] carga: 8.017 s (22022 imagenes)
+
+--- Evaluando carga_procesos_24 (24 procesos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 8.424 s (22022 imagenes)
+  [Corrida 2/3] carga: 8.326 s (22022 imagenes)
+  [Corrida 3/3] carga: 8.408 s (22022 imagenes)
+
+--- Evaluando carga_hilos_8 (8 hilos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 22.039 s (22022 imagenes)
+  [Corrida 2/3] carga: 22.642 s (22022 imagenes)
+  [Corrida 3/3] carga: 21.130 s (22022 imagenes)
+
+--- Evaluando carga_hilos_16 (16 hilos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 26.338 s (22022 imagenes)
+  [Corrida 2/3] carga: 25.836 s (22022 imagenes)
+  [Corrida 3/3] carga: 23.436 s (22022 imagenes)
+
+--- Evaluando carga_hilos_24 (24 hilos) sobre 22022 imagenes ---
+  [Corrida 1/3] carga: 23.934 s (22022 imagenes)
+  [Corrida 2/3] carga: 24.084 s (22022 imagenes)
+  [Corrida 3/3] carga: 26.901 s (22022 imagenes)

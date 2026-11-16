@@ -3,9 +3,22 @@
 # solo-CPU de PyPI. Instalar en un venv FUERA de OneDrive (ver PLAN.md).
 --extra-index-url https://download.pytorch.org/whl/cu128
 torch==2.11.0+cu128
-numpy
 pandas
 pillow
 scikit-learn
 kagglehub
 matplotlib
+
+# --- Parte C: kernels propios en CUDA Python (kernels_cuda.py) ---
+# numba-cuda compila con NVVM y enlaza con nvJitLink. Las bibliotecas CUDA se
+# fijan en 12.8, la MISMA version que trae torch +cu128: torch carga su propio
+# nvJitLink_120_0.dll (12.8) y con un NVVM 12.9 el enlace falla con
+# "ERROR 4 in nvvmAddNVVMContainerToProgram".
+numba-cuda[cu12]==0.30.4
+cuda-toolkit==12.8.*
+nvidia-cuda-nvcc-cu12==12.8.*
+nvidia-nvjitlink-cu12==12.8.*
+nvidia-cuda-nvrtc-cu12==12.8.*
+nvidia-cuda-runtime-cu12==12.8.*
+# numba-cuda 0.30 usa np.row_stack, eliminado en numpy 2.4.
+numpy<2.4

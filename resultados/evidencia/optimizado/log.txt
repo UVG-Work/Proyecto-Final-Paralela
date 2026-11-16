@@ -1,0 +1,51 @@
+﻿optimizado: 22022 imagenes, 29 clases, 3 epocas, carga con 4 procesos
+Configuracion CUDA:
+  gpu                                NVIDIA GeForce RTX 5070 Laptop GPU
+  capacidad                          sm_120
+  multiprocesadores (SM)             36
+  memoria GPU                        8.0 GiB
+  torch                              2.11.0+cu128
+  torch.version.cuda                 12.8
+  cuDNN                              91900
+  cudnn.benchmark                    True
+  cudnn.allow_tf32 (convoluciones)   True
+  matmul.allow_tf32 (densas)         False
+  cudnn.deterministic                False
+
+Corrida 0 (calentamiento, no se registra)
+  [carga] 6.770 s  imagenes=22022
+  [transferencia] 1.053 s  MiB=258.2
+  [entrenamiento] 11.071 s  por_epoca=6.59;1.44;1.44
+  [evaluacion] 7.808 s  acc_val=0.9952;f1_val=0.9951;acc_test=0.9955;f1_test=0.9954
+  [total] 26.713 s  max_mem_gpu_MiB=1878
+calentamiento total: 40.9 s
+
+Corrida 1/3
+  [carga] 6.647 s  imagenes=22022
+  [transferencia] 0.154 s  MiB=258.2
+  epoca 1/3: perdida=1.6651  1.5 s
+  epoca 2/3: perdida=0.2497  1.4 s
+  epoca 3/3: perdida=0.0339  1.4 s
+  [entrenamiento] 4.443 s  por_epoca=1.54;1.44;1.45
+  [evaluacion] 0.246 s  acc_val=0.9946;f1_val=0.9945;acc_test=0.9958;f1_test=0.9957
+  [total] 11.505 s  max_mem_gpu_MiB=822
+
+Corrida 2/3
+  [carga] 6.636 s  imagenes=22022
+  [transferencia] 0.079 s  MiB=258.2
+  epoca 1/3: perdida=1.6752  1.5 s
+  epoca 2/3: perdida=0.2404  1.4 s
+  epoca 3/3: perdida=0.0306  1.5 s
+  [entrenamiento] 4.426 s  por_epoca=1.52;1.45;1.45
+  [evaluacion] 0.235 s  acc_val=0.9939;f1_val=0.9939;acc_test=0.9964;f1_test=0.9964
+  [total] 11.388 s  max_mem_gpu_MiB=822
+
+Corrida 3/3
+  [carga] 6.756 s  imagenes=22022
+  [transferencia] 0.079 s  MiB=258.2
+  epoca 1/3: perdida=1.6676  1.6 s
+  epoca 2/3: perdida=0.2430  1.4 s
+  epoca 3/3: perdida=0.0337  1.5 s
+  [entrenamiento] 4.513 s  por_epoca=1.61;1.45;1.45
+  [evaluacion] 0.236 s  acc_val=0.9939;f1_val=0.9938;acc_test=0.9964;f1_test=0.9964
+  [total] 11.596 s  max_mem_gpu_MiB=822

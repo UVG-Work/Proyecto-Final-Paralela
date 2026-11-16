@@ -1,0 +1,51 @@
+﻿Perfilando con Nsight Compute (tarda unos minutos)...
+
+408 lanzamientos de kernel, 104 configuraciones distintas (5 lotes de entrenamiento + 1 lote de evaluacion cuDNN + 1 con kernels propios)
+
+categoria                       lanzam.  % tiempo
+propio (numba)                       12     53.7%
+convolucion (cuDNN)                  45     24.5%
+elemento a elemento                 174      7.0%
+otro                                 70      4.9%
+GEMM densa (cuBLAS/CUTLASS)          43      4.4%
+max-pool                             18      3.9%
+optimizador Adam                     35      1.5%
+reduccion / perdida                  11      0.1%
+
+Las 20 configuraciones con mas tiempo de GPU:
+    %    n           grid     bloque  reg   smem  ocup%  kernel
+ 25.6    2       4096x1x1    16x16x1   55  13824   65.9  k_conv_bn_relu
+  8.8    1       2048x2x2    16x16x1   55  13824   66.2  k_conv_bn_relu
+  8.6    1       2048x1x1    16x16x1   55  13824   65.3  k_conv_bn_relu
+  7.1    1       1024x4x4    16x16x1   61  13824   66.1  k_conv_bn_relu
+  6.2    2       1x1024x1    128x1x1  242  66560    8.3  sm80_xmma_fprop_implicit_gemm_tf32f32_tf32f32_f32_nhwckrsc_nchw_tilesize128x128x
+  3.3    1      65536x1x1      8x8x1   63   3328   65.5  implicit_convolve_sgemm
+  2.4    1       4096x1x1    128x1x1  150  74752    8.3  cutlass__5x_cudnn::Kernel
+  2.2    5       8192x1x1      8x8x1   78   3328   48.4  implicit_convolve_sgemm
+  2.1    1        512x1x1    128x1x1  248  82944    8.3  cutlass__5x_cudnn::Kernel
+  1.9    1       32x512x1    512x1x1   17   1024   87.6  cudnn::bn_fw_inf_1C11_kernel_NCHW
+  1.9    1      65536x1x1    128x1x1   30   1024   85.8  at::vectorized_elementwise_kernel
+  1.7    1      65536x1x1    256x1x1   26   1024   78.4  at::
+  1.6    5         32x1x1    512x1x1   38   1168   32.6  cudnn::bn_fw_tr_1C11_kernel_NCHW
+  1.6    5        32x1x36    128x1x1   80  26624   24.3  cutlass::Kernel2
+  1.6    5        512x1x1    128x1x1  150  74752    8.3  cutlass__5x_cudnn::Kernel
+  1.4    1        16x32x1    16x16x1   40   3136   85.4  k_densa
+  1.2    1      16384x2x2    16x16x1   24   1024   70.8  k_maxpool2
+  1.0    6       8192x1x1    128x1x1   30   1024   86.9  at::vectorized_elementwise_kernel
+  0.9    6       8192x1x1    256x1x1   26   1024   87.1  at::
+  0.9    1       64x512x1    512x1x1   17   1024   83.0  cudnn::bn_fw_inf_1C11_kernel_NCHW
+
+Kernels propios (grid/bloque medidos por ncu, comparar con kernels_cuda.py):
+  k_conv_bn_relu       grid       4096x1x1 bloque  16x16x1 reg  55 smem  13824 B ocupacion  65.9%
+  k_conv_bn_relu       grid       2048x2x2 bloque  16x16x1 reg  55 smem  13824 B ocupacion  66.2%
+  k_conv_bn_relu       grid       2048x1x1 bloque  16x16x1 reg  55 smem  13824 B ocupacion  65.3%
+  k_conv_bn_relu       grid       1024x4x4 bloque  16x16x1 reg  61 smem  13824 B ocupacion  66.1%
+  k_densa              grid        16x32x1 bloque  16x16x1 reg  40 smem   3136 B ocupacion  85.4%
+  k_maxpool2           grid      16384x2x2 bloque  16x16x1 reg  24 smem   1024 B ocupacion  70.8%
+  k_maxpool2           grid      32768x1x1 bloque  16x16x1 reg  24 smem   1024 B ocupacion  71.4%
+  k_normalizar         grid       1536x4x4 bloque  16x16x1 reg  20 smem   1024 B ocupacion  77.3%
+  k_densa              grid         2x32x1 bloque  16x16x1 reg  40 smem   3136 B ocupacion  29.6%
+  k_argmax             grid          4x1x1 bloque  128x1x1 reg  40 smem   1024 B ocupacion   8.3%
+
+Tabla: C:\Users\hugob\OneDrive\Desktop\clases\Redes\Proyecto-Final-Paralela\resultados\perfil\kernels.csv
+Crudo: C:\Users\hugob\OneDrive\Desktop\clases\Redes\Proyecto-Final-Paralela\resultados\perfil\ncu_crudo.csv

@@ -1,0 +1,13 @@
+﻿version:            kernels_propios
+comando:            python kernels_cuda.py
+inicio:             2026-11-15T20:41:40
+CPU en reposo:      7.9 %   (PLAN: < 5 %)
+GPU en reposo:      0 %, 0 MiB, 58   (uso %, memoria, temperatura)
+modo de energia:    Best performance   (Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced))
+conectada a la red: True
+fin:                2026-11-15T20:42:02  (duracion 0.4 min)
+codigo de salida:   0
+GPU uso medio/max:  12.6 % / 100 %
+GPU memoria max:    2416 MiB
+GPU temperatura max: 87 C
+capturas:           2

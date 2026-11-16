@@ -1,0 +1,13 @@
+﻿version:            optimizado_numba
+comando:            python optimizado.py --kernels-propios
+inicio:             2026-11-15T20:32:05
+CPU en reposo:      16.4 %   (PLAN: < 5 %)
+GPU en reposo:      0 %, 0 MiB, 44   (uso %, memoria, temperatura)
+modo de energia:    Best performance   (Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced))
+conectada a la red: True
+fin:                2026-11-15T20:33:30  (duracion 1.4 min)
+codigo de salida:   0
+GPU uso medio/max:  27.1 % / 100 %
+GPU memoria max:    1238 MiB
+GPU temperatura max: 82 C
+capturas:           16

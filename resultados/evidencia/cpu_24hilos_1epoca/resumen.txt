@@ -1,0 +1,13 @@
+﻿version:            cpu_24hilos_1epoca
+comando:            python secuencial.py --hilos 24 --corridas 1 --epocas 1
+inicio:             2026-11-15T19:26:49
+CPU en reposo:      10.4 %   (PLAN: < 5 %)
+GPU en reposo:      0 %, 0 MiB, 57   (uso %, memoria, temperatura)
+modo de energia:    Best performance   (Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced))
+conectada a la red: True
+fin:                2026-11-15T19:28:00  (duracion 1.2 min)
+codigo de salida:   0
+GPU uso medio/max:  0 % / 0 %
+GPU memoria max:    0 MiB
+GPU temperatura max: 57 C
+capturas:           2

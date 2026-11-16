@@ -1,0 +1,59 @@
+﻿optimizado: 22022 imagenes, 29 clases, 30 epocas, carga con 4 procesos
+Configuracion CUDA:
+  gpu                                NVIDIA GeForce RTX 5070 Laptop GPU
+  capacidad                          sm_120
+  multiprocesadores (SM)             36
+  memoria GPU                        8.0 GiB
+  torch                              2.11.0+cu128
+  torch.version.cuda                 12.8
+  cuDNN                              91900
+  cudnn.benchmark                    True
+  cudnn.allow_tf32 (convoluciones)   True
+  matmul.allow_tf32 (densas)         False
+  cudnn.deterministic                False
+(esta ejecucion NO se registra en tiempos.csv)
+
+Corrida 0 (calentamiento, no se registra)
+  [carga] 6.780 s  imagenes=22022
+  [transferencia] 0.501 s  MiB=258.2
+  [entrenamiento] 51.932 s  por_epoca=6.66;1.47;1.47;1.47;1.47;1.47;1.47;1.47;1.47;1.47;1.48;1.47;1.48;1.48;1.47;1.47;1.48;1.47;1.48;1.48;1.48;1.48;1.48;1.48;1.48;1.48;1.48;1.48;1.48;1.48
+  [evaluacion] 7.920 s  acc_val=0.9988;f1_val=0.9988;acc_test=0.9991;f1_test=0.9991
+  [total] 67.147 s  max_mem_gpu_MiB=1878
+calentamiento total: 79.0 s
+
+Corrida 1/1
+  [carga] 6.752 s  imagenes=22022
+  [transferencia] 0.155 s  MiB=258.2
+  epoca 1/30: perdida=2.4529  1.5 s
+  epoca 2/30: perdida=0.9316  1.5 s
+  epoca 3/30: perdida=0.3511  1.5 s
+  epoca 4/30: perdida=0.2255  1.5 s
+  epoca 5/30: perdida=0.1756  1.5 s
+  epoca 6/30: perdida=0.1759  1.5 s
+  epoca 7/30: perdida=0.1000  1.5 s
+  epoca 8/30: perdida=0.0596  1.5 s
+  epoca 9/30: perdida=0.1042  1.5 s
+  epoca 10/30: perdida=0.0268  1.5 s
+  epoca 11/30: perdida=0.0510  1.5 s
+  epoca 12/30: perdida=0.0349  1.5 s
+  epoca 13/30: perdida=0.0245  1.5 s
+  epoca 14/30: perdida=0.0412  1.5 s
+  epoca 15/30: perdida=0.0129  1.5 s
+  epoca 16/30: perdida=0.0018  1.5 s
+  epoca 17/30: perdida=0.0002  1.5 s
+  epoca 18/30: perdida=0.0002  1.5 s
+  epoca 19/30: perdida=0.0001  1.5 s
+  epoca 20/30: perdida=0.0001  1.5 s
+  epoca 21/30: perdida=0.0001  1.5 s
+  epoca 22/30: perdida=0.0001  1.5 s
+  epoca 23/30: perdida=0.0001  1.5 s
+  epoca 24/30: perdida=0.0001  1.5 s
+  epoca 25/30: perdida=0.0001  1.5 s
+  epoca 26/30: perdida=0.0000  1.5 s
+  epoca 27/30: perdida=0.0000  1.5 s
+  epoca 28/30: perdida=0.0000  1.5 s
+  epoca 29/30: perdida=0.0000  1.5 s
+  epoca 30/30: perdida=0.0000  1.5 s
+  [entrenamiento] 44.899 s  por_epoca=1.54;1.47;1.47;1.48;1.47;1.48;1.48;1.48;1.48;1.48;1.48;1.49;1.48;1.49;1.50;1.50;1.50;1.50;1.50;1.50;1.50;1.51;1.51;1.51;1.51;1.51;1.51;1.51;1.51;1.51
+  [evaluacion] 0.248 s  acc_val=0.9988;f1_val=0.9988;acc_test=0.9985;f1_test=0.9985
+  [total] 52.064 s  max_mem_gpu_MiB=822

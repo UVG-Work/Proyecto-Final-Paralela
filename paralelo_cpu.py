@@ -13,8 +13,8 @@ REGLAS DE ARQUITECTURA (Windows + multiprocessing):
 3. El arranque y cierre del Pool se cronometran dentro de cargar_paralelo.
 
 Uso:
-  python paralelo_cpu.py --procesos 1 2 4 8 16 24 32    # Barrido de procesos para tiempos.csv
-  python paralelo_cpu.py --hilos 1 2 4 8 16 24 32       # Barrido comparativo de hilos (ThreadPoolExecutor)
+  python paralelo_cpu.py --procesos 1 2 4 8 12 16 20 24 # Barrido de procesos para tiempos.csv
+  python paralelo_cpu.py --hilos 1 2 4 8 16 24          # Barrido comparativo de hilos (ThreadPoolExecutor)
   python paralelo_cpu.py --verificar                    # Comprueba igualdad bit a bit con secuencial
   python paralelo_cpu.py --corridas 1 --limite 500       # Prueba rapida sin registrar
 """
@@ -29,10 +29,20 @@ import numpy as np
 
 import preparacion as P
 
-# Valor optimo determinado por barrido experimental (16 nucleos / hilos es el
-# balance optimo en procesadores hibridos P+E antes de saturar memoria/IPC).
-# C importa este valor por defecto.
-PROCESOS_OPTIMO = 16
+# Valor optimo medido en la PC final (Core Ultra 9 275HX, 8P + 16E, 24 hilos),
+# SESION FINAL del 15/11 (resultados/tiempos.csv, evidencia en
+# resultados/evidencia/carga_paralela/), media de 3 corridas, 22,022 imagenes:
+#   procesos  1      2      4      8      12     16     20     24
+#   segundos  23.7   11.1   6.76   6.89   7.35   7.48   7.93   8.39
+#   hilos 8 / 16 / 24: 21.9 / 25.2 / 25.0 s (no escalan)
+# (Barrido preliminar con la PC ocupada, resultados/preliminar/barrido_275hx/:
+#  optimo en 8 con 7.68 s.)
+# La carga deja de escalar en 4-8 procesos: abrir/leer cada archivo (0.72 ms)
+# cuesta el doble que decodificarlo (0.34 ms) aun con cache caliente, y esa
+# parte no escala (consistente con el antivirus interceptando cada apertura).
+# Con mas procesos solo crece el arranque del Pool (0.03 s con 4, 0.94 s con 24).
+# C lo usa por defecto en optimizado.py.
+PROCESOS_OPTIMO = 4
 
 
 def cargar_paralelo(carpeta, rutas, procesos=PROCESOS_OPTIMO, chunksize=64) -> np.ndarray:
@@ -144,9 +154,9 @@ def ejecutar_barrido(carpeta, todas_las_rutas, trabajadores, metodo="procesos",
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--procesos", type=int, nargs="+",
-                        help="Lista de cantidad de procesos para el barrido (ej: --procesos 1 2 4 8 16 24 32)")
+                        help="Lista de cantidad de procesos para el barrido (ej: --procesos 1 2 4 8 12 16 20 24)")
     parser.add_argument("--hilos", type=int, nargs="+",
-                        help="Lista de cantidad de hilos para barrido comparativo (ej: --hilos 1 2 4 8 16 24 32)")
+                        help="Lista de cantidad de hilos para barrido comparativo (ej: --hilos 1 2 4 8 16 24)")
     parser.add_argument("--corridas", type=int, default=3,
                         help="Numero de corridas por configuracion (default: 3)")
     parser.add_argument("--epocas", type=int, default=3,

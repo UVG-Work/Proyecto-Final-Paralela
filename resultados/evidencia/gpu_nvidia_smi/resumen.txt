@@ -1,0 +1,13 @@
+﻿version:            gpu_nvidia_smi
+comando:            python optimizado.py --epocas 20 --corridas 1 --no-registrar
+inicio:             2026-11-15T20:39:07
+CPU en reposo:      10.1 %   (PLAN: < 5 %)
+GPU en reposo:      0 %, 0 MiB, 56   (uso %, memoria, temperatura)
+modo de energia:    Best performance   (Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced))
+conectada a la red: True
+fin:                2026-11-15T20:40:53  (duracion 1.8 min)
+codigo de salida:   0
+GPU uso medio/max:  62.2 % / 98 %
+GPU memoria max:    2326 MiB
+GPU temperatura max: 87 C
+capturas:           19

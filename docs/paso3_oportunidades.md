@@ -38,7 +38,7 @@ El diseño del sistema divide la aceleración en dos frentes arquitectónicos se
 |             ▼                                                                  |
 |  +──────────────────────────────────────────────────────────────────────────+  |
 |  | FASE 1: PREPARACIÓN DE DATOS EN CPU (paralelo_cpu.py)                    |  |
-|  | • 24 núcleos / 32 hilos (Intel i9-14900HX: 8P + 16E)                     |  |
+|  | • 24 núcleos / 24 hilos (Intel Core Ultra 9 275HX: 8P + 16E)             |  |
 |  | • Multiprocessing (Pool.map con chunksize dinámico)                      |  |
 |  | • Lectura I/O, descompresión Huffman, redimensionamiento BOX uint8       |  |
 |  +──────────────────────────────────────────────────────────────────────────+  |
@@ -114,11 +114,16 @@ Para lotes pequeños (< 500 imágenes), los hilos resultan más veloces debido a
 
 ### 3.2 Granularidad y Balanceo de Carga (`chunksize`) en Arquitecturas Híbridas (P-Cores + E-Cores)
 
-El procesador de pruebas es un **Intel Core i9-14900HX**, el cual posee una arquitectura heterogénea:
-- **8 P-cores (Performance Cores):** Alta frecuencia ($\sim 5.0\text{ GHz}$), soporte de 2 hilos por núcleo (Hyper-Threading).
-- **16 E-cores (Efficiency Cores):** Frecuencia moderada ($\sim 3.8\text{ GHz}$), 1 hilo por núcleo, optimizados para throughput multihilo.
+> **Cambio de hardware (15/11, ver PLAN.md, decisión 6):** la medición final se hace en un
+> **Intel Core Ultra 9 275HX** (8 P-cores + 16 E-cores, **24 hilos, sin Hyper-Threading**), no
+> en el i9-14900HX (8P con Hyper-Threading + 16E, 32 hilos) de las pruebas iniciales. La
+> arquitectura sigue siendo híbrida, así que el argumento de esta sección se mantiene.
 
-Si se utiliza el `chunksize` por defecto de `multiprocessing.Pool.map` ($\frac{N}{4 \cdot P} \approx 172$ imágenes por bloque para 32 trabajadores):
+El procesador de la medición final es un **Intel Core Ultra 9 275HX**, con arquitectura heterogénea:
+- **8 P-cores (Performance Cores):** alta frecuencia (hasta $\sim 5.4\text{ GHz}$), 1 hilo por núcleo (sin Hyper-Threading).
+- **16 E-cores (Efficiency Cores):** frecuencia moderada, 1 hilo por núcleo, optimizados para throughput multihilo.
+
+Si se utiliza el `chunksize` por defecto de `multiprocessing.Pool.map` ($\frac{N}{4 \cdot P} \approx 229$ imágenes por bloque para 24 trabajadores):
 - Un bloque grande asignado a un núcleo E tardará más tiempo en completarse que el mismo bloque en un núcleo P.
 - Los núcleos P terminarían temprano y quedarían ociosos esperando que los núcleos E finalicen sus últimos bloques (*straggler effect*).
 
@@ -165,6 +170,7 @@ $$S_{max\_solo\_gpu} = \frac{901.43\text{ s}}{76.12\text{ s}} \approx \mathbf{11
 Al paralelizar la carga en la CPU (Rol B) y el entrenamiento y evaluación en la GPU (Rol C):
 1. **Fase 1 (Carga multihilo/multiproceso):**
    - Con 16 procesos en la CPU i9-14900HX, la carga desciende de $35.41\text{ s}$ a $\approx 2.5\text{–}3.5\text{ s}$ (un speedup de fase de $\mathbf{10\times\text{–}14\times}$).
+   - **Medido en la PC final (15/11, preliminar):** el óptimo es **8 procesos, 7.7 s**, contra 19.9 s con 1 proceso (speedup de fase ~2.6×). La carga no escala más allá de 4–8 procesos porque abrir y leer cada archivo (0.72 ms) cuesta más que decodificarlo (0.34 ms), y esa parte no escala (consistente con el escaneo en acceso del antivirus). Ver la tabla en PLAN.md, sección 4 (B). Esta estimación debe actualizarse con la sesión final.
 2. **Transferencia PCIe:**
    - La copia de los arreglos compactos a la GPU requiere $\approx 0.1\text{–}0.2\text{ s}$.
 3. **Fase 2 (Entrenamiento en GPU con CUDA):**

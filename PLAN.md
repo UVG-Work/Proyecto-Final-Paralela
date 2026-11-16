@@ -36,8 +36,13 @@ Lo que se califica (enunciado, sección V):
    (`version, fase, segundos, ...`) y `resumen.py` saca promedio, desviación y speedup por
    fase. Antes de la corrida 1 hay un **calentamiento que no se registra** (lee los bytes de
    todos los archivos y da un paso de entrenamiento), así que todas las corridas cuentan.
-6. **Todas las mediciones finales en la misma máquina y en la misma sesión:** la laptop de A
-   (i9-14900HX, 24 núcleos / 32 hilos, 32 GB, RTX 5070 Laptop 8 GB). Ver sección 5.
+6. **Todas las mediciones finales en la misma máquina y en la misma sesión:** la PC de C
+   (**Intel Core Ultra 9 275HX: 8 núcleos P + 16 E, 24 hilos, sin Hyper-Threading**; 32 GB;
+   RTX 5070 Laptop 8 GB, Blackwell `sm_120`, 36 SM; driver 596.49). Ver sección 5.
+   - **Cambio (15/11, C):** antes decía "la laptop de A (i9-14900HX, 32 hilos)". Las
+     mediciones preliminares de A (`resultados/preliminar/`) y las estimaciones del paso 3
+     son de esa otra laptop; la línea base definitiva se mide en esta PC. Los barridos ya no
+     llegan a 32 (aquí hay 24 hilos).
 
 ## 2. Estructura del repo
 
@@ -49,7 +54,9 @@ Lo que se califica (enunciado, sección V):
 | `resumen.py` | — | A | tabla de promedios y speedup por fase. |
 | `docs/paso1_2_secuencial.md` | — | A | pasos 1 y 2 del enunciado (análisis + medición secuencial). |
 | `paralelo_cpu.py` | 1 · CPU | **B** | `cargar_paralelo()` con varios núcleos. |
-| `optimizado.py` | 1 + 2 | **C** | carga con `cargar_paralelo()` + entrenamiento/evaluación en CUDA. |
+| `optimizado.py` | 1 + 2 | **C** | carga con `cargar_paralelo()` + entrenamiento/evaluación en CUDA. `--kernels-propios` = versión `optimizado_numba`. |
+| `kernels_cuda.py` | 2 · GPU | **C** | kernels propios en CUDA Python (numba-cuda): inferencia completa de la red con grid/bloques diseñados a mano. `python kernels_cuda.py` verifica y mide cada kernel. |
+| `perfilar_gpu.py` | 2 · GPU | **C** | grid/bloques reales de cada kernel (cuDNN, cuBLAS, PyTorch y los propios) con Nsight Compute (`ncu`). |
 | `docs/paso3_*.md`, `docs/paso4_5_*.md` | — | B, C | sus pasos del enunciado. |
 
 **Regla de oro:** `preparacion.py` y `red.py` definen *qué* se calcula y los usan las dos
@@ -68,7 +75,16 @@ python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
 ```
 
 `requirements.txt` instala PyTorch con CUDA 12.8 (el mínimo para la RTX 5070, que es
-Blackwell). Probado en la laptop de A: `torch 2.11.0+cu128`, `cuda.is_available() == True`.
+Blackwell). Probado en la laptop de A y en la PC final: `torch 2.11.0+cu128`,
+`cuda.is_available() == True`.
+
+**En la PC final** el venv ya existe: `C:\Users\hugob\.venvs\asl-cuda` (Python 3.12.10).
+Ojo: el `python` del PATH es el de MSYS2 (3.14), que no tiene PyTorch con CUDA; usar
+siempre `C:\Users\hugob\.venvs\asl-cuda\Scripts\python` o activar el venv primero
+(`C:\Users\hugob\.venvs\asl-cuda\Scripts\Activate.ps1`).
+
+`requirements.txt` también fija numba-cuda y las bibliotecas CUDA 12.8 para los kernels de C,
+y `numpy<2.4` (ver trampas 6 y 7).
 La primera ejecución descarga el dataset (~1 GB) con kagglehub; luego usa la caché.
 
 Prueba rápida (no registra tiempos):
@@ -107,13 +123,13 @@ def cargar_paralelo(carpeta, rutas, procesos=PROCESOS_OPTIMO) -> np.ndarray:
 - Repartir `preparacion.cargar_imagen` entre núcleos. Recomendado: `multiprocessing.Pool.map`.
   `map` conserva el orden; `imap_unordered` **no** (desordena imágenes y etiquetas).
 - Probar `chunksize` chicos (16, 64) contra el de defecto de `map` (`len // (procesos*4)`,
-  bloques de ~170 imágenes con 32 procesos): bloques chicos reparten mejor entre núcleos P y E,
+  bloques de ~230 imágenes con 24 procesos): bloques chicos reparten mejor entre núcleos P y E,
   que avanzan a distinta velocidad.
 - Comparar también `concurrent.futures.ThreadPoolExecutor`: Pillow suelta el GIL al
   decodificar y redimensionar, así que los hilos también escalan y se ahorran el arranque de
   procesos (aunque el análisis de cabeceras JPEG sí es Python con GIL, así que se espera que
   escalen peor). La comparación procesos vs hilos es buen material para la discusión.
-- `python paralelo_cpu.py --procesos 1 2 4 8 16 24 32`: barrido que registra la fase
+- `python paralelo_cpu.py --procesos 1 2 4 8 12 16 20 24`: barrido que registra la fase
   `carga` en `tiempos.csv` con `version = carga_procesos_<p>` (o `carga_hilos_<p>`) y
   **`epocas = 3`** (no afecta la carga, pero `resumen.py` empareja contra la línea base por
   `epocas` y `fase`). Cada medición carga las **22,022 rutas en una sola llamada**, con
@@ -131,7 +147,53 @@ def cargar_paralelo(carpeta, rutas, procesos=PROCESOS_OPTIMO) -> np.ndarray:
 **Definición de terminado:** el barrido corre, la igualdad bit a bit da `True`, y hay una
 gráfica de speedup de la carga contra número de procesos.
 
-### C — Pasos 4 y 5: entrenamiento en GPU con CUDA
+**Barrido preliminar en la PC final (15/11, lo corrió C; sin registrar en `tiempos.csv`,
+archivado en `resultados/preliminar/barrido_275hx/`):**
+
+| procesos | 1 | 2 | 4 | 8 | 12 | 16 | 20 | 24 | hilos 8 | hilos 16 | hilos 24 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| carga (s), media de 2 | 19.9 | 11.3 | 7.85 | **7.68** | 8.43 | 9.18 | 10.0 | 10.4 | 21.5 | 22.5 | 24.4 |
+
+- La igualdad bit a bit da `True` (procesos e hilos).
+- **El óptimo aquí es 8, no 16.** `PROCESOS_OPTIMO` se cambió a 8, con la tabla en el comentario.
+- **La carga deja de escalar en 4–8 procesos (speedup ~2.6×), y los hilos no escalan nada.**
+  Diagnóstico de C con 1 núcleo: abrir y leer el archivo cuesta 0.72 ms por imagen,
+  decodificar 0.34 ms, convertir a RGB 0.02 ms y reducir 0.08 ms. Más de la mitad del tiempo
+  es abrir archivos, y eso no escala, aun con la caché del disco caliente. El IPC no influye
+  (devolver o no la imagen tarda lo mismo). El arranque del Pool crece de 0.03 s con 4
+  procesos a 0.94 s con 24. La PC tiene **Sophos Intercept X** activo, y que cada apertura de
+  archivo cueste tanto es consistente con su escaneo en acceso. **B:** es material directo
+  para la discusión (factores que limitan) y para corregir en el paso 3 la estimación de
+  2.5–3.5 s para la carga.
+
+### C — Pasos 4 y 5: entrenamiento en GPU con CUDA ✅ (código hecho; sesión final medida el 15/11, ver docs/paso4_5_gpu.md sección 4)
+
+**Estado (15/11):**
+- `optimizado.py` corre completo en la PC final. En la prueba de validación (sin registrar,
+  con la PC ocupada) dio: carga ~7.9 s, transferencia ~0.1 s, entrenamiento ~4.7 s
+  (~1.5 s por época), evaluación ~0.25 s y total ~13 s. **Accuracy de test 99.61–99.73 %**
+  (secuencial: 99.61 %). Cumple la definición de terminado de abajo.
+- Corrida 0 de calentamiento implementada: su primera época tarda ~7 s contra 1.5 s de las
+  demás, lo que confirma que hay que descartarla.
+- **Pregunta "CUDA Python" resuelta con código, sin esperar al catedrático:** `kernels_cuda.py`
+  tiene 5 kernels propios en numba-cuda (normalizar, conv+BN+ReLU fusionados con memoria
+  compartida y bloqueo en registros, maxpool, GEMM por tiles y argmax), con grid y bloques
+  diseñados a mano. Reproducen la red con error relativo de 1.5e-6 y 100 % de predicciones
+  iguales a PyTorch. Tardan 25 ms por lote de 512, contra 19.5 ms de cuDNN; la primera versión
+  tardaba 355 ms y la mejora está documentada.
+  `python optimizado.py --kernels-propios` registra la versión `optimizado_numba`, cuya
+  evaluación usa esos kernels (99.64 % en test).
+- `docs/paso4_5_gpu.md` está escrito: diseño, configuración CUDA, tabla de kernels medida y
+  razones de la diferencia de accuracy, y la tabla del perfilador con grid y bloques reales.
+  Faltan los números de la sesión final.
+- **Perfilador (resuelto 15/11):** `perfilar_gpu.py` usa **Nsight Compute** (`ncu`), porque
+  `torch.profiler` falla en esta PC: su CUPTI 12.8 da `CUPTI_ERROR_INVALID_DEVICE` con este
+  driver. Ya están habilitados los contadores de la GPU (*NVIDIA Control Panel → Desktop →
+  Enable Developer Settings → Developer → Manage GPU Performance Counters → "Allow access to
+  the GPU performance counters to all users" → Apply*); sin eso `ncu` da `ERR_NVGPUCTRPERM`.
+  Tarda ~9 min con 5 lotes y deja `resultados/perfil/kernels.csv`.
+
+**Plan original:**
 
 **Entregable de código: `optimizado.py`**, mismas fases y mismas filas en `tiempos.csv` que
 `secuencial.py`, con `version = optimizado`:
@@ -221,18 +283,32 @@ Todo en una sola sesión para que las condiciones sean las mismas.
    que corriera nada nuestro.)
 2. Pausar la sincronización de OneDrive.
 3. Conectar a la corriente y poner el modo de energía en *Máximo rendimiento*.
+   Todos los comandos con el Python del venv (sección 3), no con el `python` del PATH.
 4. Verificar reposo: Administrador de tareas con CPU < 5 % y `nvidia-smi` con GPU-Util ~0 %.
 5. Arrancar con `resultados/tiempos.csv` **vacío** (mover el anterior a otra carpeta):
    `resumen.py` promedia todas las filas del archivo, incluidas las de pruebas o corridas
    abortadas.
 
-**Logs de evidencia** (en otra terminal, dejarlos corriendo durante cada ejecución), y la
-salida de cada script guardada con `| Tee-Object resultados/log_<version>.txt`:
+**Logs de evidencia: `evidencia.ps1` (C, 15/11).** Envuelve cada comando. Mientras corre deja
+en `resultados/evidencia/<version>/`:
+- `log.txt`: la salida del script.
+- `cpu.csv`: `typeperf`, % de cada procesador lógico cada 1 s.
+- `gpu.csv`: `nvidia-smi` cada 200 ms.
+- `captura_*.jpg`: capturas de pantalla automáticas cada N s, más una al final.
+- `resumen.txt`: CPU y GPU en reposo antes de empezar, modo de energía, uso medio y máximo de
+  la GPU, y temperatura máxima.
 
-```bash
-typeperf "\Processor(*)\% Processor Time" -si 1 -o resultados/cpu_<version>.csv -y
-nvidia-smi --query-gpu=timestamp,utilization.gpu,utilization.memory,memory.used,temperature.gpu,clocks.sm,power.draw --format=csv -lms 100 > resultados/gpu_<version>.csv
+Antes de cada ejecución, dejar **en primer plano** el Administrador de tareas en la vista que
+corresponda (ver la columna "Captura").
+
+```powershell
+& "$PSHOME\powershell.exe" -ExecutionPolicy Bypass -File .\evidencia.ps1 -Version secuencial -Comando "secuencial.py"
+& "$PSHOME\powershell.exe" -ExecutionPolicy Bypass -File .\evidencia.ps1 -Version gpu_30epocas `
+    -Comando "optimizado.py --epocas 30 --corridas 1 --no-registrar" -CadaSegundos 5 -VentanaNvidiaSmi
 ```
+
+Equivale a lo que antes se hacía a mano: `typeperf "\Processor(*)\% Processor Time" -si 1 ...` y
+`nvidia-smi --query-gpu=... --format=csv -lms 100` en otra terminal, más `Tee-Object` del log.
 
 **Orden** (con 5 min de pausa entre ejecuciones; esta laptop baja el reloj cuando se calienta
 y el sesgo cae siempre sobre lo último que se mide):
@@ -240,12 +316,14 @@ y el sesgo cae siempre sobre lo último que se mide):
 | # | Comando | Duración aprox. | Captura de pantalla |
 |---|---|---|---|
 | 1 | `python secuencial.py` | 40–55 min | Adm. de tareas, vista de procesadores lógicos: **un solo núcleo** ocupado durante el entrenamiento |
-| 2 | `python secuencial.py --hilos <n> --corridas 1 --epocas 1` para n = 8, 16, 24, 32 | ~10 min | — (en un CPU con núcleos P y E, 32 hilos no suele ser lo más rápido) |
+| 2 | `python secuencial.py --hilos <n> --corridas 1 --epocas 1` para n = 8, 16, 24 | ~10 min | — (en un CPU con núcleos P y E, 24 hilos no suele ser lo más rápido) |
 | 3 | `python secuencial.py --hilos <mejor n>` | ~10 min | todos los núcleos ocupados |
-| 4 | `python paralelo_cpu.py --procesos 1 2 4 8 16 24 32` | ~5 min | todos los núcleos ocupados durante la carga |
+| 4 | `python paralelo_cpu.py --procesos 1 2 4 8 12 16 20 24 --hilos 8 16 24` | ~8 min | todos los núcleos ocupados durante la carga. Si el óptimo cambia, actualizar `PROCESOS_OPTIMO` **antes** del paso 5 |
 | 5 | `python optimizado.py` | ~2 min | CPU repartida durante la carga |
-| 6 | `python optimizado.py --epocas 30` con una opción para **no registrar** (C la agrega, como `--limite` en `secuencial.py`) | ~3 min | solo para evidencia: con 3 épocas la GPU termina en segundos y no da tiempo de capturar `nvidia-smi` ni la pestaña GPU del Adm. de tareas bajo carga |
-| 7 | `python resumen.py` | — | la tabla final |
+| 6 | `python optimizado.py --kernels-propios` | ~2 min | — (versión `optimizado_numba`) |
+| 7 | `python optimizado.py --epocas 30 --corridas 1 --no-registrar` | ~2 min | solo para evidencia: con 3 épocas la GPU termina en segundos y no da tiempo de capturar `nvidia-smi` ni la pestaña GPU del Adm. de tareas bajo carga |
+| 8 | `python kernels_cuda.py` y `python perfilar_gpu.py` | ~10 min (ncu es lento) | — (tablas del paso 4; no tocan `tiempos.csv`) |
+| 9 | `python resumen.py` | — | la tabla final |
 
 **Chequeos de sanidad antes de aceptar los números**
 - `desv` pequeña frente a `media` en cada fase. Si una corrida se sale, repetir.
@@ -284,7 +362,16 @@ y el sesgo cae siempre sobre lo último que se mide):
    sincroniza al final de cada época; la fase de transferencia la tiene que sincronizar C.
 3. **`.item()` dentro del ciclo** sincroniza la GPU en cada lote. `red.entrenar` ya acumula la
    pérdida en un tensor; no agregar `print(perdida.item())` dentro del ciclo.
-4. **Núcleos P y E.** El i9-14900HX tiene 8 núcleos de rendimiento y 16 de eficiencia. Un
-   proceso de 1 hilo puede caer en un núcleo E y medir más lento; con 32 procesos, los
-   núcleos E pesan en el promedio. Es un factor a mencionar, no a esconder.
+4. **Núcleos P y E.** El Core Ultra 9 275HX tiene 8 núcleos de rendimiento y 16 de
+   eficiencia, sin Hyper-Threading. Un proceso de 1 hilo puede caer en un núcleo E y medir más
+   lento, y con muchos procesos los núcleos E pesan en el promedio. Es un factor a mencionar,
+   no a esconder.
 5. **Cambiar `preparacion.py` o `red.py`** obliga a re-medir la línea base (40–55 min).
+6. **numba-cuda y torch deben usar la misma versión de CUDA (12.8).** torch carga su propio
+   `nvJitLink_120_0.dll` 12.8; con el NVVM 12.9 que pip instala por defecto, el enlace de los
+   kernels falla con `ERROR 4 in nvvmAddNVVMContainerToProgram`. Ya está fijado en
+   `requirements.txt`.
+7. **`numpy<2.4`.** numba-cuda 0.30 usa `np.row_stack`, que numpy 2.4 eliminó.
+8. **Antivirus (Sophos Intercept X en la PC final).** Abrir cada archivo cuesta más que
+   decodificarlo, y eso limita el escalado de la carga (ver el barrido en la sección 4, B). No
+   desactivarlo para medir: es la condición real de la máquina. Se documenta como factor.
