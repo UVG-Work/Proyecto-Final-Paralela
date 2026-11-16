@@ -134,6 +134,8 @@ Se fija un `chunksize = 64` (o dinámico ajustado). Bloques más pequeños permi
 
 ## 4. Análisis de Límites Teóricos y Ley de Amdahl
 
+> 4.1–4.3 son la estimación previa a la medición (con la línea base preliminar); los valores medidos y la comparación están en **4.4**.
+
 La **Ley de Amdahl** establece el límite superior del speedup teórico alcanzable por un sistema paralelo en función de la fracción paralelizable ($P$) y la fracción estrictamente secuencial ($1 - P$):
 
 $$S(N) = \frac{1}{(1 - P) + \frac{P}{N}}$$
@@ -170,7 +172,7 @@ $$S_{max\_solo\_gpu} = \frac{901.43\text{ s}}{76.12\text{ s}} \approx \mathbf{11
 Al paralelizar la carga en la CPU (Rol B) y el entrenamiento y evaluación en la GPU (Rol C):
 1. **Fase 1 (Carga multihilo/multiproceso):**
    - Con 16 procesos en la CPU i9-14900HX, la carga desciende de $35.41\text{ s}$ a $\approx 2.5\text{–}3.5\text{ s}$ (un speedup de fase de $\mathbf{10\times\text{–}14\times}$).
-   - **Medido en la PC final (15/11, preliminar):** el óptimo es **8 procesos, 7.7 s**, contra 19.9 s con 1 proceso (speedup de fase ~2.6×). La carga no escala más allá de 4–8 procesos porque abrir y leer cada archivo (0.72 ms) cuesta más que decodificarlo (0.34 ms), y esa parte no escala (consistente con el escaneo en acceso del antivirus). Ver la tabla en PLAN.md, sección 4 (B). Esta estimación debe actualizarse con la sesión final.
+   - **Medido en la PC final (15/11, preliminar):** el óptimo es **8 procesos, 7.7 s**, contra 19.9 s con 1 proceso (speedup de fase ~2.6×). La carga no escala más allá de 4–8 procesos porque abrir y leer cada archivo (0.72 ms) cuesta más que decodificarlo (0.34 ms), y esa parte no escala (consistente con el escaneo en acceso del antivirus). En la sesión final el óptimo fue **4 procesos, 6.76 s** (ver 4.4).
 2. **Transferencia PCIe:**
    - La copia de los arreglos compactos a la GPU requiere $\approx 0.1\text{–}0.2\text{ s}$.
 3. **Fase 2 (Entrenamiento en GPU con CUDA):**
@@ -186,3 +188,58 @@ $$S_{global} = \frac{901.43\text{ s}}{8.7\text{ s}} \approx \mathbf{103.6\times}
 
 La paralelización conjunta de la CPU y la GPU eleva el speedup de **$11.8\times$ a más de $100\times$**, demostrando de forma contundente la importancia de no descuidar la fase de preparación de datos en la CPU en pipelines de Deep Learning de alto rendimiento.
 
+
+---
+
+### 4.4 Lo medido en la sesión final (15/11/2026) contra la estimación
+
+Las secciones 4.1–4.3 son la **estimación** hecha con la línea base preliminar (otra laptop,
+con carga ajena). La sesión final se midió en la PC de medición (Core Ultra 9 275HX + RTX 5070
+Laptop) con la máquina en reposo. Media de 3 corridas; fuente: `resultados/resumen.csv`.
+
+| Fase | Secuencial, 1 núcleo P | Secuencial, núcleo que elige Windows | Optimizado | Speedup vs núcleo P | Speedup vs núcleo de Windows | Speedup estimado en 4.3 |
+|---|---|---|---|---|---|---|
+| Carga | 18.17 s | 26.85 s | 6.68 s (4 procesos) | **2.7×** | 4.0× | 10–14× |
+| Transferencia | — | — | 0.10 s | — | — | (0.1–0.2 s) |
+| Entrenamiento | 291.74 s | 380.53 s | 4.46 s | **65.4×** | 85.3× | ~160× |
+| Evaluación | 13.10 s | 15.91 s | 0.24 s | **54.8×** | 66.6× | ~100× |
+| **Total** | **323.03 s** | 423.31 s | **11.50 s** | **28.1×** | 36.8× | ~104× |
+
+(La CPU tiene núcleos P y E; un núcleo E es 1.5× más lento. Sin anclar, Windows corrió la
+línea base sobre todo en núcleos E; `secuencial.py --nucleos-p` la ancla a los P. Ver
+`docs/paso1_2_secuencial.md`, factor 3.)
+
+**Límite de Amdahl recalculado** con la línea base en núcleo P: si solo se acelerara el
+entrenamiento (escenario 1), el total no bajaría de 18.17 + 13.10 = 31.3 s, es decir, 10.3×
+como máximo. Con las dos fases aceleradas se llegó a 28.1×, casi 3 veces ese límite. Esto confirma el argumento
+central de este paso: **sin paralelizar la carga en la CPU, la GPU no habría servido de mucho.**
+
+**Por qué el total quedó por debajo de lo estimado:** la carga escaló mucho menos de lo
+previsto.
+
+| Trabajadores | 1 | 2 | 4 | 8 | 12 | 16 | 20 | 24 |
+|---|---|---|---|---|---|---|---|---|
+| Procesos (s) | 23.69 | 11.08 | **6.76** | 6.89 | 7.35 | 7.48 | 7.93 | 8.39 |
+| Hilos (s) | — | — | — | 21.94 | — | 25.20 | — | 24.97 |
+
+(Gráfica: `resultados/graficas/speedup_carga_cpu.png`.)
+
+1. **Escala bien hasta 4 procesos (3.5×) y luego empeora.** La curva de Amdahl ajustada a
+   N ≤ 4 da una fracción paralela de P ≈ 96 %, que predice ~10× con 24 procesos. Lo medido es
+   2.8×. La parte que no escala es **abrir cada archivo**: medido con 1 núcleo, abrir y leer
+   cuesta 0.72 ms por imagen contra 0.34 ms de decodificar el JPEG, aun con la caché del disco
+   caliente. Es consistente con el escaneo en acceso del antivirus (Sophos Intercept X) y con
+   la serialización del sistema de archivos en Windows. A eso se suma el arranque del Pool
+   (*spawn* de un intérprete por proceso): 0.03 s con 4 procesos y 0.94 s con 24.
+2. **Los hilos no escalan nada** (21.9–25.2 s, igual o peor que 1 proceso). Además del GIL en
+   el análisis de cabeceras JPEG, la apertura de archivos tampoco se paraleliza entre hilos.
+   La comparación procesos contra hilos confirma la elección de `multiprocessing.Pool`
+   (sección 3.1).
+3. **Consecuencia (Amdahl en la versión optimizada):** la carga pasa de ser el 6 % del tiempo
+   en la línea base al **58 %** en la versión optimizada (6.7 de 11.5 s). Es la parte que ahora
+   limita el speedup total, y la que convendría atacar después (por ejemplo, empaquetar las
+   22,022 imágenes en un solo archivo, para hacer una sola apertura en vez de 22,022).
+
+El entrenamiento también quedó por debajo de la estimación de ~160×, porque la línea base final
+es más rápida (97 s por época en núcleo P, contra los 237.5 s de la laptop ocupada). La época en la GPU
+salió como se esperaba: 1.45 s.

@@ -116,7 +116,8 @@ con mucha ramificación. Esa diferencia es la base del paso 3.
   Ultra 9 275HX (8 núcleos P + 16 núcleos E, **24 hilos, sin Hyper-Threading**), 32 GB RAM,
   RTX 5070 Laptop 8 GB, Windows 11, Python 3.12.10. La línea base se vuelve a medir ahí; las
   cifras de esta sección (y las del 3.1 % = 1/32) se actualizan con esa corrida.
-- **Software:** Python 3.10.11, PyTorch 2.11.0+cu128, Pillow, NumPy, scikit-learn.
+- **Software:** Python 3.10.11 en la preliminar; **Python 3.12.10 en la final**. PyTorch
+  2.11.0+cu128, Pillow, NumPy, scikit-learn.
 - **Secuencial de verdad:** `torch.set_num_threads(1)` y `set_num_interop_threads(1)`; la carga
   es un `for` en el hilo principal.
 - **Comando:** `python secuencial.py` → 3 corridas × (carga + 3 épocas + evaluación).
@@ -126,12 +127,70 @@ con mucha ramificación. Esa diferencia es la base del paso 3.
   y todas cuentan para el promedio.
 - **Cronómetro:** `time.perf_counter()` alrededor de cada fase; cada fase es una fila en
   `resultados/tiempos.csv`. `python resumen.py` calcula media, desviación, mínimo y máximo.
-- **Evidencia:** uso de CPU por núcleo cada 2 s con
-  `typeperf "\Processor(*)\% Processor Time"`.
+- **Evidencia:** uso de CPU por núcleo cada 1 s con
+  `typeperf "\Processor(*)\% Processor Time"`, más capturas automáticas del Administrador de
+  tareas (`evidencia.ps1`; archivos en `resultados/evidencia/secuencial/`).
 
-### 2.2 Resultados (preliminares)
+### 2.2 Resultados finales (sesión del 15/11/2026)
 
-> **Preliminares.** Se tomaron el 14/11/2026 con la laptop **ocupada** por otras aplicaciones
+Condiciones: Core Ultra 9 275HX con Windows en *Best performance*, conectada a la corriente,
+aplicaciones cerradas (fondo: < 1 núcleo de 24, sobre todo Alienware Command Center y el
+propio Administrador de tareas). Calentamiento de 14.9 s, no contado.
+
+| Corrida | Carga | Entrenamiento (3 épocas) | Evaluación | Total |
+|---|---|---|---|---|
+| 1 | 26.71 | 375.85 (124.8 / 125.9 / 125.2 por época) | 16.03 | 418.61 |
+| 2 | 25.54 | 383.89 (127.8 / 126.9 / 129.2) | 16.17 | 425.62 |
+| 3 | 28.29 | 381.85 (127.3 / 126.3 / 128.2) | 15.51 | 425.68 |
+| **Media** | **26.85** | **380.53** | **15.91** | **423.31** |
+| Desv. estándar | 1.38 | 4.18 | 0.35 | 4.06 (1.0 % de la media) |
+| % del total | 6.3 % | **89.9 %** | 3.8 % | 100 % |
+
+Resultado del modelo, **idéntico en las tres corridas** (1 hilo + semilla fija = determinista):
+
+| Conjunto | Accuracy | F1 macro |
+|---|---|---|
+| Validación (3,303) | 99.52 % | 99.51 % |
+| Prueba (3,304) | 99.61 % | 99.60 % |
+
+Es exactamente el mismo resultado que en la medición preliminar, en otra máquina: el modelo y
+los datos no cambiaron, solo el hardware.
+
+Rendimiento por unidad (medias):
+
+| Fase | Por unidad | Rendimiento |
+|---|---|---|
+| Carga | 1.22 ms por imagen | 820 imágenes/s |
+| Entrenamiento | 126.8 s por época, 8.2 ms por imagen | ~77 GFLOP/s (0.63 GFLOP por imagen entrenada) |
+| Evaluación | 2.4 ms por imagen | ~87 GFLOP/s (0.21 GFLOP por inferencia) |
+
+Lo que dicen estos números para los pasos siguientes:
+
+- **El entrenamiento es el 89.9 % del tiempo**, y por eso es el blanco de CUDA.
+- **Límite de Amdahl.** Aunque el entrenamiento costara cero, con la carga y la evaluación
+  secuenciales el total no bajaría de 42.8 s (26.85 + 15.91): un speedup máximo de
+  423.3 / 42.8 ≈ 9.9×. Por eso también se paralelizan la carga (CPU, B) y la evaluación
+  (GPU, C).
+- **Línea base anclada a los núcleos P** (`secuencial.py --nucleos-p`, 3 corridas). Sin
+  anclar, Windows dejó el único hilo sobre todo en núcleos E (ver factor 3):
+
+  | | Carga (s) | Entrenamiento (s) | Evaluación (s) | Total (s) |
+  |---|---|---|---|---|
+  | 1 núcleo, lo elige Windows | 26.85 ± 1.38 | 380.53 ± 4.18 (~127 s por época) | 15.91 ± 0.35 | 423.31 ± 4.06 |
+  | **1 núcleo P** | **18.17 ± 0.70** | **291.74 ± 1.32 (~97 s por época)** | **13.10 ± 0.24** | **323.03 ± 1.19** |
+
+  El accuracy es idéntico (99.61 %). La versión anclada a P es la línea base **conservadora**
+  (el mejor núcleo único), y es contra la que se reporta el speedup principal. Con ella, el
+  límite de Amdahl acelerando solo el entrenamiento es 323.0 / (18.17 + 13.10) ≈ 10.3×.
+- **Referencia CPU multihilo** (`secuencial.py --hilos 16`, el mejor de 8/16/24 hilos):
+  54.4 s de entrenamiento (18.1 s por época), 7.0× más rápido que 1 núcleo, con 99.55 % en
+  test. Es la base "honesta" contra la que también se compara la GPU (docs/paso4_5_gpu.md).
+- Esta CPU es ~1.9× más rápida por época que la de la preliminar (126.8 contra 237.5 s):
+  es más nueva y estaba sin carga ajena.
+
+### 2.3 Resultados preliminares (14/11, otra laptop; solo como historial)
+
+> **Preliminares (historial).** Se tomaron el 14/11/2026 en la laptop de A (i9-14900HX) con la laptop **ocupada** por otras aplicaciones
 > (Roblox Studio, Blender, navegador, Discord). Sirven como orden de magnitud y para validar
 > el pipeline completo; el informe usa los de la sesión final (PLAN.md, sección 5). Archivos:
 > `resultados/preliminar/` (`tiempos.csv`, `resumen.csv`, `log_secuencial.txt`,
@@ -178,34 +237,46 @@ Lo que dicen estos números para los pasos siguientes:
 - **Orientación para C** (prueba exploratoria de A en la misma máquina ocupada, no la medición
   oficial): en la GPU una época tomó ~1.7 s contra ~240 s aquí, con 99.5–99.7 % en test.
 
-### 2.3 Factores que influyen en el rendimiento
+### 2.4 Factores que influyen en el rendimiento
 
-1. **Carga de otros procesos.** Es el factor dominante en esta medición. El tiempo por
-   corrida creció 766 → 849 → 1089 s junto con el uso de CPU ajeno (25 % → 36 % → 39 %), con
-   el mismo código y los mismos datos. La desviación estándar del total es 18.6 % de la media,
-   inaceptable para el informe.
+1. **Carga de otros procesos.** Fue el factor dominante en la medición preliminar. El tiempo
+   por corrida creció 766 → 849 → 1089 s junto con el uso de CPU ajeno (25 % → 36 % → 39 %),
+   con el mismo código y los mismos datos, y la desviación estándar del total fue 18.6 % de la
+   media. Con la máquina en reposo (sesión final) bajó a **1.0 %**: la diferencia la hacen las
+   condiciones de medición, no el código.
 2. **Temperatura.** En una laptop la CPU y la GPU comparten disipador. Bajo carga sostenida el
    procesador baja su frecuencia de *turbo*, y la GPU marcaba 84 °C al terminar. Cada corrida
    hereda el calor de la anterior, así que el sesgo cae siempre sobre las últimas.
-3. **Núcleos P y E.** El i9-14900HX mezcla 8 núcleos de rendimiento y 16 de eficiencia, y es
-   Windows el que decide en cuál corre el hilo. La época de 219.7 s de la corrida 1 contra las
-   de 325–338 s de la corrida 3 (+50 %) es consistente con frecuencia reducida o con el hilo
-   movido a un núcleo E. No se puede distinguir cuál con estos datos.
-4. **Caché de disco.** En la prueba inicial, con la caché del sistema operativo fría, la carga
+3. **Núcleos P y E.** Las dos CPU usadas mezclan 8 núcleos de rendimiento y 16 de
+   eficiencia, y es Windows el que decide en cuál corre el hilo. En la preliminar, la época de
+   219.7 s de la corrida 1 contra las de 325–338 s de la corrida 3 (+50 %) es consistente con
+   frecuencia reducida o con el hilo movido a un núcleo E. En la final se **midió**: la misma
+   convolución de 1 hilo anclada a cada procesador lógico tarda ~4.3 ms en los 8 núcleos P
+   (procesadores 0, 1, 10–13, 22 y 23) y ~6.4 ms en los 16 núcleos E (**1.5×**). Sin anclar,
+   Windows dejó la línea base sobre todo en núcleos E (127 s por época); anclada a los P,
+   97 s. Por eso se reportan las dos y el speedup principal es contra el núcleo P. En las
+   capturas se ve que Windows **mueve el hilo entre núcleos**: no hay un único cuadro al
+   100 %, sino ~1/24 de la CPU total repartido. Con hilos
+   también pesa: en el barrido de 1 época, 16 hilos (17.4 s) rinden mejor que 24 (18.0 s),
+   porque los núcleos E frenan a los P en cada sincronización.
+4. **Antivirus (Sophos Intercept X en la PC final).** Abrir cada archivo cuesta ~0.72 ms
+   contra ~0.34 ms de decodificarlo, aun con la caché caliente; afecta igual a todas las
+   versiones, pero limita cuánto escala la carga en paralelo (paso 3).
+5. **Caché de disco.** En la prueba inicial, con la caché del sistema operativo fría, la carga
    costó 2.6 ms por imagen; ya caliente, 1.0 ms (2.6x). Por eso el calentamiento lee los
    22,022 archivos antes de cronometrar: la fase de carga mide decodificación y reducción
    (CPU), no la velocidad del disco ni el escaneo del antivirus en la primera lectura. El
    dataset vive en `~/.cache/kagglehub`, fuera de OneDrive, para que la sincronización no
    interfiera.
-5. **Eficiencia aritmética.** ~41 GFLOP/s es alrededor de una cuarta parte del pico teórico de
+6. **Eficiencia aritmética.** ~41 GFLOP/s (preliminar; ~77 GFLOP/s en la final) es alrededor de una cuarta parte (la mitad en la final) del pico teórico de
    un núcleo P con AVX2 (32 FLOP por ciclo a ~5 GHz ≈ 160 GFLOP/s). Dos causas:
    - BatchNorm, ReLU y *max-pool* hacen pocas operaciones por byte leído; las limita la
      memoria, no el cálculo.
    - La retropropagación reordena datos además de multiplicar.
-6. **Formato de memoria.** En este CPU, entrenar con los datos en orden *channels_last*
+7. **Formato de memoria.** En este CPU, entrenar con los datos en orden *channels_last*
    (NHWC) es 15 % más rápido que en NCHW (968 contra 1134 ms por lote de 64). La versión
    secuencial usa el más rápido, para no inflar el speedup de la GPU con una línea base
    debilitada.
-7. **Tamaño de lote.** Con lotes de 64 cada multiplicación de matrices es mediana. Lotes más
+8. **Tamaño de lote.** Con lotes de 64 cada multiplicación de matrices es mediana. Lotes más
    grandes aprovecharían mejor los vectores del CPU (y mucho más la GPU), pero cambiarían el
    entrenamiento, así que el lote se fijó igual para ambas versiones.

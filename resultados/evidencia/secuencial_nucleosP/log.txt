@@ -1,0 +1,30 @@
+﻿proceso anclado a los nucleos P: [0, 1, 10, 11, 12, 13, 22, 23]
+secuencial_nucleosP: 22022 imagenes, 29 clases, 3 epocas, torch 2.11.0+cu128, 1 hilo(s)
+calentamiento (no se registra): 14.3 s
+
+Corrida 1/3
+  [carga] 17.39 s  imagenes=22022
+  epoca 1/3: perdida=1.6654  97.5 s
+  epoca 2/3: perdida=0.2381  96.7 s
+  epoca 3/3: perdida=0.0340  98.8 s
+  [entrenamiento] 293.04 s  por_epoca=97.52;96.67;98.85
+  [evaluacion] 13.34 s  acc_val=0.9952;f1_val=0.9951;acc_test=0.9961;f1_test=0.9960
+  [total] 323.78 s  
+
+Corrida 2/3
+  [carga] 18.38 s  imagenes=22022
+  epoca 1/3: perdida=1.6654  95.4 s
+  epoca 2/3: perdida=0.2381  96.6 s
+  epoca 3/3: perdida=0.0340  98.4 s
+  [entrenamiento] 290.40 s  por_epoca=95.39;96.64;98.37
+  [evaluacion] 12.87 s  acc_val=0.9952;f1_val=0.9951;acc_test=0.9961;f1_test=0.9960
+  [total] 321.66 s  
+
+Corrida 3/3
+  [carga] 18.74 s  imagenes=22022
+  epoca 1/3: perdida=1.6654  96.7 s
+  epoca 2/3: perdida=0.2381  96.8 s
+  epoca 3/3: perdida=0.0340  98.3 s
+  [entrenamiento] 291.79 s  por_epoca=96.68;96.81;98.30
+  [evaluacion] 13.10 s  acc_val=0.9952;f1_val=0.9951;acc_test=0.9961;f1_test=0.9960
+  [total] 323.65 s  

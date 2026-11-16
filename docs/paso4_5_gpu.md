@@ -215,33 +215,43 @@ Cómo leerlo:
 `python resumen.py` → `resultados/resumen.csv`. Logs, `cpu.csv`, `gpu.csv` y capturas en
 `resultados/evidencia/<version>/`.
 
-| Fase | secuencial, 1 núcleo (s) | CPU 16 hilos (s) | **optimizado** (s) | optimizado_numba (s) | **speedup vs 1 núcleo** | speedup vs CPU 16 hilos |
-|---|---|---|---|---|---|---|
-| carga (CPU) | 26.85 ± 1.38 | 25.71 ± 0.18 | 6.68 ± 0.07 (4 procesos) | 6.87 ± 0.50 | **4.0×** | 3.8× |
-| transferencia CPU→GPU | — | — | 0.10 ± 0.04 (258 MiB) | 0.13 ± 0.04 | — | — |
-| entrenamiento (GPU) | 380.53 ± 4.18 | 54.43 ± 0.82 | 4.46 ± 0.05 | 4.53 ± 0.08 | **85.3×** | 12.2× |
-| evaluación (GPU) | 15.91 ± 0.35 | 2.47 ± 0.07 | 0.24 ± 0.01 | 0.33 ± 0.00 | **66.6×** | 10.3× |
-| **total** | **423.31 ± 4.06** | 82.64 ± 0.60 | **11.50 ± 0.10** | 11.88 ± 0.55 | **36.8×** | 7.2× |
+| Fase | 1 núcleo, Windows elige (s) | **1 núcleo P** (s) | CPU 16 hilos (s) | **optimizado** (s) | optimizado_numba (s) | **speedup vs núcleo P** | speedup vs núcleo de Windows | speedup vs 16 hilos |
+|---|---|---|---|---|---|---|---|---|
+| carga (CPU) | 26.85 ± 1.38 | 18.17 ± 0.70 | 25.71 ± 0.18 | 6.68 ± 0.07 (4 procesos) | 6.87 ± 0.50 | **2.7×** | 4.0× | 3.8× |
+| transferencia CPU→GPU | — | — | — | 0.10 ± 0.04 (258 MiB) | 0.13 ± 0.04 | — | — | — |
+| entrenamiento (GPU) | 380.53 ± 4.18 | 291.74 ± 1.32 | 54.43 ± 0.82 | 4.46 ± 0.05 | 4.53 ± 0.08 | **65.4×** | 85.3× | 12.2× |
+| evaluación (GPU) | 15.91 ± 0.35 | 13.10 ± 0.24 | 2.47 ± 0.07 | 0.24 ± 0.01 | 0.33 ± 0.00 | **54.8×** | 66.6× | 10.3× |
+| **total** | 423.31 ± 4.06 | **323.03 ± 1.19** | 82.64 ± 0.60 | **11.50 ± 0.10** | 11.88 ± 0.55 | **28.1×** | 36.8× | 7.2× |
+
+**Dos líneas base de 1 núcleo, y por qué.** La CPU tiene 8 núcleos P y 16 núcleos E; medido con
+la misma convolución anclada a cada procesador lógico, un núcleo E es **1.5× más lento**
+(6.4 contra 4.3 ms). `secuencial.py` sin anclar deja que Windows elija el núcleo, y en la sesión
+lo dejó sobre todo en núcleos E (127 s por época). `secuencial.py --nucleos-p` ancla el proceso a
+los núcleos P, detectados con `GetLogicalProcessorInformationEx` (97 s por época, mismo accuracy
+de 99.61 %). **El speedup que se reporta como principal es contra el núcleo P** (el mejor
+núcleo único, el conservador); el otro muestra cuánto depende la línea base de una decisión
+del sistema operativo.
 
 | Versión | Accuracy test | F1 macro test |
 |---|---|---|
-| secuencial (1 hilo, determinista) | 99.61 % (las 3 corridas) | 99.60 % |
+| secuencial (1 hilo, determinista; núcleo de Windows y núcleo P) | 99.61 % (las 6 corridas) | 99.60 % |
 | CPU 16 hilos | 99.55 % (las 3 corridas) | 99.55 % |
 | optimizado (GPU) | 99.58 / 99.64 / 99.64 % | 99.57 / 99.64 / 99.64 % |
 | optimizado_numba (GPU, evaluación con kernels propios) | 99.61 / 99.73 / 99.64 % | 99.61 / 99.73 / 99.64 % |
 
 Lectura:
 
-1. **Entrenamiento: 85× contra 1 núcleo y 12× contra el mejor CPU multihilo.** Una época baja
-   de ~127 s (1 núcleo) y ~18 s (16 hilos) a **1.45 s**.
-   - El primer número es el que pide el enunciado. El segundo es la comparación honesta: el
-     CPU de 24 núcleos tampoco es lento, y la ventaja real de la GPU viene de sus Tensor Cores
-     (TF32) y de su ancho de banda de memoria.
-2. **Total: 36.8×**, de 7 min a 11.5 s, pero muy lejos de 85×. Es la **ley de Amdahl**:
+1. **Entrenamiento: 65× contra el mejor núcleo único y 12× contra el mejor CPU multihilo.** Una
+   época baja de ~97 s (1 núcleo P), ~127 s (1 núcleo E) y ~18 s (16 hilos) a **1.45 s**.
+   - El primero es el que pide el enunciado (contra la versión secuencial). El segundo es la
+     comparación más exigente: el CPU de 24 núcleos tampoco es lento, y la ventaja real de la
+     GPU viene de sus Tensor Cores (TF32) y de su ancho de banda de memoria.
+2. **Total: 28.1×** (36.8× contra el núcleo de Windows), de 5.4 min a 11.5 s, muy lejos de los
+   65× del entrenamiento. Es la **ley de Amdahl**:
    - En la línea base la carga era el 6 % del tiempo. En la versión optimizada es el **58 %**
      (6.7 de 11.5 s).
-   - La carga solo baja 4× porque abrir cada archivo no escala (ver el barrido de B en
-     PLAN.md).
+   - La carga solo baja 2.7× contra un núcleo P porque abrir cada archivo no escala (ver el
+     barrido de B en PLAN.md); además, el Pool reparte entre núcleos P y E.
    - Aunque la GPU entrenara en 0 s, el total no bajaría de ~7 s.
 3. **La transferencia es despreciable (0.1 s, el 0.9 % del total)** porque los datos viajan
    **una sola vez y en uint8** (258 MiB) y quedan en la memoria de la GPU para las 3 épocas. Si

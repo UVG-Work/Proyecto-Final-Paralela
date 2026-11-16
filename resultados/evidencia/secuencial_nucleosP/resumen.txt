@@ -1,0 +1,13 @@
+﻿version:            secuencial_nucleosP
+comando:            python secuencial.py --nucleos-p
+inicio:             2026-11-15T21:35:05
+CPU en reposo:      13 %   (PLAN: < 5 %)
+GPU en reposo:      0 %, 0 MiB, 50   (uso %, memoria, temperatura)
+modo de energia:    Best performance   (Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced))
+conectada a la red: True
+fin:                2026-11-15T21:51:37  (duracion 16.5 min)
+codigo de salida:   0
+GPU uso medio/max:  0 % / 0 %
+GPU memoria max:    0 MiB
+GPU temperatura max: 53 C
+capturas:           17

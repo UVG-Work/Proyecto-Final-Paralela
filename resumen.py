@@ -24,6 +24,14 @@ base = (t[t.version == "secuencial"][["epocas", "fase", "media"]]
         .rename(columns={"media": "media_secuencial"}))
 t = t.merge(base, on=["epocas", "fase"], how="left")
 t["speedup"] = t.media_secuencial / t.media
+# Segunda referencia: la linea base anclada a los nucleos P (secuencial.py --nucleos-p), el
+# mejor nucleo unico de esta CPU hibrida. Es el speedup conservador.
+if (t.version == "secuencial_nucleosP").any():
+    base_p = (t[t.version == "secuencial_nucleosP"][["epocas", "fase", "media"]]
+              .rename(columns={"media": "media_p"}))
+    t = t.merge(base_p, on=["epocas", "fase"], how="left")
+    t["speedup_vs_nucleoP"] = t.media_p / t.media
+    t = t.drop(columns=["media_p"])
 t["_f"] = t.fase.map(lambda f: ORDEN_FASES.index(f) if f in ORDEN_FASES else len(ORDEN_FASES))
 t = t.sort_values(["epocas", "version", "_f"]).drop(columns=["_f", "media_secuencial"])
 

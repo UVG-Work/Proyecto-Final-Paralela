@@ -168,6 +168,30 @@ archivado en `resultados/preliminar/barrido_275hx/`):**
 
 ### C — Pasos 4 y 5: entrenamiento en GPU con CUDA ✅ (código hecho; sesión final medida el 15/11, ver docs/paso4_5_gpu.md sección 4)
 
+**Cierre del proyecto (15/11, noche) — hecho por C en la PC final:**
+- **Línea base en núcleos P.** En la sesión, Windows corrió `secuencial.py` sobre todo en
+  núcleos E (127 s por época); un núcleo E es 1.5× más lento que uno P (medido núcleo por
+  núcleo). Se agregó `secuencial.py --nucleos-p`, que ancla el proceso a los núcleos P
+  detectados con la API de Windows, y se midió con 3 corridas (`secuencial_nucleosP`: 323.0 s
+  total, 97 s por época). **El speedup principal del informe es contra esa línea base: 28.1×
+  total, 65.4× entrenamiento** (36.8× y 85.3× contra la que eligió Windows). `resumen.py`
+  calcula ambas (`speedup` y `speedup_vs_nucleoP`).
+- **Gráficas** (`graficas.py`, reescrito): tiempo por fase, speedup por fase (contra núcleo P,
+  núcleo de Windows y 16 hilos), escalabilidad de la carga con Amdahl ajustada, y uso de la
+  GPU en el tiempo. Se corrigió que se tomaba la fila de 1 época de `cpu_16hilos`.
+- **`evidencia.ps1`**: el log de `nvidia-smi -f` perdía los últimos ~20 s al cerrarlo, porque
+  escribe en bloques. Ahora se consulta una vez por muestra y se escribe al instante.
+  Los tiempos no se ven afectados.
+- **`entrega.ipynb`**: el entregable de código en un solo archivo (secuencial y optimizado fase
+  por fase, kernels propios y tabla oficial), ejecutado en la PC final.
+- **Documentos de A y B actualizados** con los números finales (`paso1_2` §2.2 y factores;
+  `paso3` §4.4).
+- **Informe**: `informe/informe.md` → `informe/Informe_Proyecto3_CUDA.pdf` con
+  `python informe/generar_pdf.py`. Formato de artículo tipo LaTeX: fuente Computer Modern
+  (`informe/fuentes/`, licencia OFL), tablas estilo booktabs, figuras y tablas numeradas, redacción
+  en prosa y gráficas en escala de grises. Autores: June Watanabe (A), Jonathan Zacarías (B) y
+  Hugo Barillas (C). Falta revisarlo entre los tres.
+
 **Estado (15/11):**
 - `optimizado.py` corre completo en la PC final. En la prueba de validación (sin registrar,
   con la PC ocupada) dio: carga ~7.9 s, transferencia ~0.1 s, entrenamiento ~4.7 s

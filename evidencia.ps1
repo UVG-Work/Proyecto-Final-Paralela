@@ -64,9 +64,6 @@ $cpuCsv = Join-Path $dir "cpu.csv"
 $gpuCsv = Join-Path $dir "gpu.csv"
 $typeperf = Start-Process typeperf -PassThru -WindowStyle Hidden -ArgumentList @(
     '"\Processor(*)\% Processor Time"', "-si", "1", "-o", "`"$cpuCsv`"", "-y")
-$smi = Start-Process nvidia-smi -PassThru -WindowStyle Hidden -ArgumentList @(
-    "--query-gpu=timestamp,utilization.gpu,utilization.memory,memory.used,temperature.gpu,clocks.sm,power.draw",
-    "--format=csv", "-lms", "200", "-f", "`"$gpuCsv`"")
 $ventana = $null
 if ($VentanaNvidiaSmi) {
     $ventana = Start-Process (Join-Path $PSHOME "powershell.exe") -PassThru -ArgumentList @(
@@ -101,6 +98,26 @@ $capturador = Start-Job -ArgumentList $dir, $bandera, $CadaSegundos, $PrimeraCap
     Capturar ("captura_" + (Get-Date -Format "HHmmss") + "_final.jpg")
 }
 
+# GPU: una consulta a nvidia-smi por muestra (~5 por segundo), escrita al archivo al
+# instante. NO se usa "nvidia-smi -lms 200 -f archivo": escribe en bloques y, al cerrarlo,
+# se perdian hasta ~20 s del final de la ejecucion (justo la ultima corrida).
+$muestreador = Start-Job -ArgumentList $gpuCsv, $bandera -ScriptBlock {
+    param($csv, $bandera)
+    $q = "timestamp,utilization.gpu,utilization.memory,memory.used,temperature.gpu,clocks.sm,power.draw"
+    Set-Content -Path $csv -Encoding UTF8 -Value ((& nvidia-smi "--query-gpu=$q" --format=csv) | Select-Object -First 1)
+    $finTras = $null
+    while ($true) {
+        $linea = & nvidia-smi "--query-gpu=$q" --format=csv,noheader
+        Add-Content -Path $csv -Encoding UTF8 -Value $linea
+        # tras quitar la bandera, 3 s mas de muestras para ver la bajada en las graficas
+        if (-not (Test-Path $bandera)) {
+            if (-not $finTras) { $finTras = (Get-Date).AddSeconds(3) }
+            elseif ((Get-Date) -gt $finTras) { break }
+        }
+        Start-Sleep -Milliseconds 100
+    }
+}
+
 # ---- El comando ----
 # cmd /c junta stdout y stderr sin que PowerShell 5.1 convierta stderr en errores;
 # -u: salida sin buffer, para que el log avance en vivo.
@@ -117,10 +134,9 @@ try {
 finally {
     Pop-Location
     Remove-Item $bandera -ErrorAction SilentlyContinue
-    Wait-Job $capturador -Timeout 30 | Out-Null
-    Remove-Job $capturador -Force
-    Start-Sleep -Seconds 2            # unos segundos de bajada en las graficas
-    foreach ($p in @($typeperf, $smi, $ventana)) {
+    Wait-Job $capturador, $muestreador -Timeout 30 | Out-Null
+    Remove-Job $capturador, $muestreador -Force
+    foreach ($p in @($typeperf, $ventana)) {
         # taskkill /T cierra tambien los hijos (el nvidia-smi -l 1 dentro de la ventana);
         # con Stop-Process solo, la ventana quedaba abierta refrescando para siempre.
         if ($p -and -not $p.HasExited) { taskkill /PID $p.Id /T /F 2>&1 | Out-Null }

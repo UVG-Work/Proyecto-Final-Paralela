@@ -1,3 +1,8 @@
 __pycache__/
 .venv/
 *.pt
+
+# Herramientas locales para generar el informe (solo se sube el PDF)
+informe/generar_pdf.py
+informe/informe.md
+informe/fuentes/
